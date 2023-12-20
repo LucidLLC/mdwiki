@@ -1,0 +1,9 @@
+assets/
+pages/
+*.png
+*.md
+*.html
+mdwiki
+!template/page.html
+!README.md
+.DS_Store

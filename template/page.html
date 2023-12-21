@@ -65,7 +65,7 @@
             <div class="sidebar desktop">
               {{ range $entry := .Entries }}
               <li class="nav-item">
-                {{ if $entry.Selected }}
+                {{ if $entry.Active }}
                 <a
                   class="nav-link active"
                   aria-current="page"

@@ -1,10 +1,16 @@
 package main
 
 import (
+	"io"
 	"io/fs"
-	"log"
+	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/gomarkdown/markdown"
+	"github.com/gomarkdown/markdown/html"
+	"github.com/gomarkdown/markdown/parser"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -19,12 +25,46 @@ const (
 	CompiledContentFile = "index.html"
 )
 
+var (
+	HtmlMarkdownRenderer = html.NewRenderer(html.RendererOptions{
+		Flags: html.CommonFlags | html.LazyLoadImages,
+	})
+
+	DefaultMarkdownParser = parser.New()
+)
+
 type PageType int
 
 const (
 	Index PageType = iota
 	SubPage
 )
+
+type PageConfig struct {
+	Title string `yaml:"title"`
+}
+
+type Entry struct {
+	Title  string
+	Link   string
+	Active bool
+}
+
+type CompiledTemplate struct {
+	Title   string
+	Content string
+}
+
+type RenderInput struct {
+	Entries []Entry
+
+	Title   string
+	Content string
+}
+
+func (*CompiledTemplate) RenderTo(entries []Entry, w io.Writer) error {
+	return nil
+}
 
 /*
 	  Directory structure:
@@ -62,6 +102,32 @@ func (p *Page) String() string {
 	return p.ContentPath
 }
 
+func (p *Page) Compile() (*CompiledTemplate, error) {
+	config, err := os.ReadFile(p.ConfigPath)
+
+	if err != nil {
+		return nil, err
+	}
+
+	content, err := os.ReadFile(p.ContentPath)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var pageConfig PageConfig
+	if err := yaml.Unmarshal(config, pageConfig); err != nil {
+		return nil, err
+	}
+
+	renderedMarkdown := markdown.ToHTML(content, DefaultMarkdownParser, HtmlMarkdownRenderer)
+
+	return &CompiledTemplate{
+		Title:   pageConfig.Title,
+		Content: string(renderedMarkdown),
+	}, nil
+}
+
 // CollectPages walks through a directory and collects all the valid pages
 func CollectPages(directory string) []*Page {
 
@@ -91,7 +157,4 @@ func CollectPages(directory string) []*Page {
 }
 
 func main() {
-	pages := CollectPages("pages")
-
-	log.Println(pages[0].CompiledPath(), pages[1].CompiledPath())
 }

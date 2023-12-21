@@ -143,8 +143,6 @@ func (p *Page) Compile() (*CompiledPage, error) {
 		return nil, err
 	}
 
-	log.Println(string(content), string(config))
-
 	var pageConfig PageConfig
 
 	if err := yaml.Unmarshal(config, &pageConfig); err != nil {
@@ -208,14 +206,11 @@ func main() {
 
 	// collect the entries for each page
 
-	entriesForPage := make(map[*CompiledPage][]Entry)
-
-	log.Println(len(compiledPages), len(pages), pages)
 	for i, p := range compiledPages {
-		entriesForPage[p] = make([]Entry, len(compiledPages))
+		entries := make([]Entry, len(compiledPages))
 
 		for j, op := range compiledPages {
-			entriesForPage[p][j] = Entry{
+			entries[j] = Entry{
 				Title:  op.Title,
 				Link:   op.Original.HttpPath(),
 				Active: i == j,
@@ -233,7 +228,7 @@ func main() {
 		}
 
 		// attempt to render to the given file
-		if err := p.RenderTo(entriesForPage[p], f); err != nil {
+		if err := p.RenderTo(entries, f); err != nil {
 			log.Fatalln(err)
 		}
 

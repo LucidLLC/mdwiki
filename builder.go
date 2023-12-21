@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"io/fs"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,6 +12,10 @@ import (
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
 	"gopkg.in/yaml.v3"
+
+	cp "github.com/otiai10/copy"
+
+	templateHtml "html/template"
 )
 
 const (
@@ -26,11 +31,7 @@ const (
 )
 
 var (
-	HtmlMarkdownRenderer = html.NewRenderer(html.RendererOptions{
-		Flags: html.CommonFlags | html.LazyLoadImages,
-	})
-
-	DefaultMarkdownParser = parser.New()
+	DefaultPageTemplate = templateHtml.Must(templateHtml.ParseFiles("template/page.html"))
 )
 
 type PageType int
@@ -50,20 +51,28 @@ type Entry struct {
 	Active bool
 }
 
-type CompiledTemplate struct {
-	Title   string
-	Content string
-}
-
+// RenderInput is the actual struct that gets passed in when rendering the template
 type RenderInput struct {
 	Entries []Entry
 
 	Title   string
-	Content string
+	Content templateHtml.HTML
 }
 
-func (*CompiledTemplate) RenderTo(entries []Entry, w io.Writer) error {
-	return nil
+// CompiledPage is a page that has rendered HTML and the title from the config.
+type CompiledPage struct {
+	Original *Page
+	Title    string
+	Content  string
+}
+
+// this uses Go's HTML template engine to
+func (p *CompiledPage) RenderTo(entries []Entry, w io.Writer) error {
+	return DefaultPageTemplate.Execute(w, &RenderInput{
+		Entries: entries,
+		Title:   p.Title,
+		Content: templateHtml.HTML(p.Content),
+	})
 }
 
 /*
@@ -88,7 +97,16 @@ type Page struct {
 	ContentPath string
 }
 
-func (p *Page) CompiledPath() string {
+func (p *Page) CompileDirectory() string {
+	if p.Type == Index {
+		return CompiledDirectory
+	}
+	dir, _ := filepath.Split(p.ContentPath)
+	dir = filepath.Base(dir)
+	return filepath.Join(CompiledDirectory, dir)
+}
+
+func (p *Page) CompilePath() string {
 	if p.Type == Index {
 		return filepath.Join(CompiledDirectory, CompiledContentFile)
 	}
@@ -98,11 +116,21 @@ func (p *Page) CompiledPath() string {
 	return filepath.Join(CompiledDirectory, dir, CompiledContentFile)
 }
 
+func (p *Page) HttpPath() string {
+	if p.Type == Index {
+		return "/"
+	}
+
+	dir, _ := filepath.Split(p.ContentPath)
+	dir = filepath.Base(dir)
+	return "/" + dir
+}
+
 func (p *Page) String() string {
 	return p.ContentPath
 }
 
-func (p *Page) Compile() (*CompiledTemplate, error) {
+func (p *Page) Compile() (*CompiledPage, error) {
 	config, err := os.ReadFile(p.ConfigPath)
 
 	if err != nil {
@@ -115,16 +143,22 @@ func (p *Page) Compile() (*CompiledTemplate, error) {
 		return nil, err
 	}
 
+	log.Println(string(content), string(config))
+
 	var pageConfig PageConfig
-	if err := yaml.Unmarshal(config, pageConfig); err != nil {
+
+	if err := yaml.Unmarshal(config, &pageConfig); err != nil {
 		return nil, err
 	}
 
-	renderedMarkdown := markdown.ToHTML(content, DefaultMarkdownParser, HtmlMarkdownRenderer)
+	renderedMarkdown := markdown.ToHTML(content, parser.New(), html.NewRenderer(html.RendererOptions{
+		Flags: html.CommonFlags | html.LazyLoadImages,
+	}))
 
-	return &CompiledTemplate{
-		Title:   pageConfig.Title,
-		Content: string(renderedMarkdown),
+	return &CompiledPage{
+		Original: p,
+		Title:    pageConfig.Title,
+		Content:  string(renderedMarkdown),
 	}, nil
 }
 
@@ -157,4 +191,55 @@ func CollectPages(directory string) []*Page {
 }
 
 func main() {
+	pages := CollectPages(ParentDirectory)
+	compiledPages := make([]*CompiledPage, len(pages))
+
+	// we need to do a few rounds - first 'compile' the pages.
+	// then collect the entries.
+	for i, p := range pages {
+		compiled, err := p.Compile()
+
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		compiledPages[i] = compiled
+	}
+
+	// collect the entries for each page
+
+	entriesForPage := make(map[*CompiledPage][]Entry)
+
+	log.Println(len(compiledPages), len(pages), pages)
+	for i, p := range compiledPages {
+		entriesForPage[p] = make([]Entry, len(compiledPages))
+
+		for j, op := range compiledPages {
+			entriesForPage[p][j] = Entry{
+				Title:  op.Title,
+				Link:   op.Original.HttpPath(),
+				Active: i == j,
+			}
+		}
+
+		// Create the compile directories
+		os.MkdirAll(p.Original.CompileDirectory(), os.ModePerm)
+
+		// create the compiled file
+		f, err := os.Create(p.Original.CompilePath())
+
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		// attempt to render to the given file
+		if err := p.RenderTo(entriesForPage[p], f); err != nil {
+			log.Fatalln(err)
+		}
+
+		f.Close() // close the file
+	}
+
+	// Copy the assets from the parent path to compiled path
+	cp.Copy("./assets/", filepath.Join(CompiledDirectory, "assets"))
 }

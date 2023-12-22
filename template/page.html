@@ -18,9 +18,11 @@
         overflow-y: scroll;
         height: min-content;
       }
-      
+
       /* We want the flex direction to be column, not row. so override for each we might use */
       nav.navbar-expand-md .navbar-nav {
+        flex-wrap: nowrap;
+    justify-content: flex-start;
         flex-direction: column;
       }
 
@@ -46,12 +48,12 @@
   <body>
     <div class="container-fluid">
       <div class="row">
-        <div class="col-md-2">
+        <div class="col-sm-4">
           <nav class="navbar navbar-expand-md bg-body-tertiary">
             <div class="container-fluid">
               <a class="navbar-brand navbar-collapse-logo mb-0 h1" href="#">
                 <img
-                  src="../assets/images/logo.png"
+                  src="assets/images/logo.png"
                   alt="Logo"
                   width="30"
                   height="24"
@@ -74,16 +76,19 @@
 
               <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
-                  <a class="navbar-brand navbar-expand-logo mb-0 h1" href="#">
-                    <img
-                      src="../assets/images/logo.png"
-                      alt="Logo"
-                      width="30"
-                      height="24"
-                      class="d-inline-block align-text-top"
-                    />
-                    MCTeams / Wiki
-                  </a>
+           
+                    <li>
+                        <a class="navbar-brand navbar-expand-logo mb-0 h1" href="#">
+                            <img
+                              src="assets/images/logo.png"
+                              alt="Logo"
+                              width="30"
+                              height="24"
+                              class="d-inline-block align-text-top"
+                            />
+                            MCTeams / Wiki
+                          </a>
+                    </li>
 
                   {{ range $entry := .Entries }}
                   <li class="nav-item">
@@ -107,7 +112,7 @@
           </nav>
         </div>
 
-        <div class="col content flex-column mb-auto">{{ .Content }}</div>
+        <div class="col-sm-8 content flex-column mb-auto">{{ .Content }}</div>
       </div>
     </div>
     <script

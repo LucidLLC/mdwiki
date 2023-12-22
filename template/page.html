@@ -18,37 +18,23 @@
         overflow-y: scroll;
         height: min-content;
       }
-
-      .sidebar {
-        top: 0;
-        left: 0;
-        position: fixed;
-        width: 12%;
-        padding-top: 20px;
-        margin-left: 5%;
+      
+      /* We want the flex direction to be column, not row. so override for each we might use */
+      nav.navbar-expand-md .navbar-nav {
+        flex-direction: column;
       }
 
-      .sidebar.mobile {
+      .navbar-collapse-logo {
         display: none;
       }
 
-      @media (max-width: 635px) {
-        .sidebar {
-          position: inherit;
-          /* display: none; */
-        }
-
-        .sidebar.desktop {
+      @media (max-width: 768px) {
+        .navbar-expand-logo {
           display: none;
         }
 
-        .sidebar.mobile {
-          top: 0;
-          left: 0;
-          position: fixed;
-          padding-top: 0px;
-          /* position: inherit; */
-          display: inherit;
+        .navbar-collapse-logo {
+          display: initial;
         }
 
         .content {
@@ -58,51 +44,67 @@
     </style>
   </head>
   <body>
-    <div class="container">
+    <div class="container-fluid">
       <div class="row">
-        <div class="col-sm-2">
-          <ul class="nav nav-pills flex-column sidebar">
-            <div class="sidebar desktop">
-              {{ range $entry := .Entries }}
-              <li class="nav-item">
-                {{ if $entry.Active }}
-                <a
-                  class="nav-link active"
-                  aria-current="page"
-                  href="{{ $entry.Link }}"
-                  >{{$entry.Title}}</a
-                >
-                {{ else }}
-                <a class="nav-link" href="{{ $entry.Link }}"
-                  >{{$entry.Title}}</a
-                >
-                {{ end }}
-              </li>
-              {{ end }}
-            </div>
+        <div class="col-md-2">
+          <nav class="navbar navbar-expand-md bg-body-tertiary">
+            <div class="container-fluid">
+              <a class="navbar-brand navbar-collapse-logo mb-0 h1" href="#">
+                <img
+                  src="../assets/images/logo.png"
+                  alt="Logo"
+                  width="30"
+                  height="24"
+                  class="d-inline-block align-text-top"
+                />
+                MCTeams / Wiki
+              </a>
 
-            <div class="sidebar mobile">
-              <li class="nav-item dropdown">
-                <a
-                  class="nav-link dropdown-toggle"
-                  data-bs-toggle="dropdown"
-                  href="#"
-                  role="button"
-                  aria-expanded="false"
-                  >Menu</a
-                >
-                <ul class="dropdown-menu">
+              <button
+                class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#navbarNav"
+                aria-controls="navbarNav"
+                aria-expanded="false"
+                aria-label="Toggle navigation"
+              >
+                <span class="navbar-toggler-icon"></span>
+              </button>
+
+              <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                  <a class="navbar-brand navbar-expand-logo mb-0 h1" href="#">
+                    <img
+                      src="../assets/images/logo.png"
+                      alt="Logo"
+                      width="30"
+                      height="24"
+                      class="d-inline-block align-text-top"
+                    />
+                    MCTeams / Wiki
+                  </a>
+
                   {{ range $entry := .Entries }}
-                  <li>
-                    <a class="dropdown-item" href="{{ $entry.Link }}"
-                      >{{ $entry.Title }}</a
+                  <li class="nav-item">
+                    {{ if $entry.Active }}
+                    <a
+                      class="nav-link active"
+                      aria-current="page"
+                      href="{{ $entry.Link }}"
+                      >{{$entry.Title}}</a
                     >
+                    {{ else }}
+                    <a class="nav-link" href="{{ $entry.Link }}"
+                      >{{$entry.Title}}</a
+                    >
+                    {{ end }}
                   </li>
                   {{ end }}
                 </ul>
-              </li>
+              </div>
             </div>
-          </ul>
+          </nav>
         </div>
 
         <div class="col content flex-column mb-auto">{{ .Content }}</div>

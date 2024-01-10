@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/gomarkdown/markdown"
+	"github.com/gomarkdown/markdown/ast"
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
 	"gopkg.in/yaml.v3"
@@ -151,6 +152,19 @@ func (p *Page) Compile() (*CompiledPage, error) {
 
 	renderedMarkdown := markdown.ToHTML(content, parser.New(), html.NewRenderer(html.RendererOptions{
 		Flags: html.CommonFlags | html.LazyLoadImages,
+		RenderNodeHook: func(w io.Writer, node ast.Node, entering bool) (ast.WalkStatus, bool) {
+			switch x := node.(type) {
+			case *ast.Table:
+				{
+
+					x.Attribute = &ast.Attribute{
+						Classes: [][]byte{[]byte("table"), []byte("table-bordered")},
+					}
+
+				}
+			}
+			return ast.GoToNext, false
+		},
 	}))
 
 	return &CompiledPage{

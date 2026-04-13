@@ -255,8 +255,13 @@ func main() {
 		entries := make([]Entry, len(compiledPages))
 
 		for j, op := range compiledPages {
+			title := op.Title
+			if op.Original.Type == Index {
+				title = "Home"
+			}
+
 			entries[j] = Entry{
-				Title:  op.Title,
+				Title:  title,
 				Link:   op.Original.HttpPath(),
 				Active: i == j,
 			}

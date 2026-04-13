@@ -6,5 +6,6 @@ compiled/
 *.html
 mdwiki
 !template/page.html
+!template/front_page.html
 !README.md
 .DS_Store

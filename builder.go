@@ -27,12 +27,14 @@ const (
 
 	ParentDirectory = "pages"
 
-	CompiledDirectory   = "compiled"
-	CompiledContentFile = "index.html"
+	CompiledDirectory     = "compiled"
+	CompiledContentFile   = "index.html"
+	CompiledFrontPageFile = "index.html"
 )
 
 var (
 	DefaultPageTemplate = templateHtml.Must(templateHtml.ParseFiles("template/page.html"))
+	FrontPageTemplate   = templateHtml.Must(templateHtml.ParseFiles("template/front_page.html"))
 )
 
 type PageType int
@@ -69,7 +71,12 @@ type CompiledPage struct {
 
 // this uses Go's HTML template engine to
 func (p *CompiledPage) RenderTo(entries []Entry, w io.Writer) error {
-	return DefaultPageTemplate.Execute(w, &RenderInput{
+	tmpl := DefaultPageTemplate
+	if p.Original.Type == Index {
+		tmpl = FrontPageTemplate
+	}
+
+	return tmpl.Execute(w, &RenderInput{
 		Entries: entries,
 		Title:   p.Title,
 		Content: templateHtml.HTML(p.Content),
@@ -96,6 +103,10 @@ type Page struct {
 	Type        PageType
 	ConfigPath  string
 	ContentPath string
+}
+
+func (p *Page) IsSyntheticIndex() bool {
+	return p.Type == Index && p.ContentPath == ""
 }
 
 func (p *Page) CompileDirectory() string {
@@ -132,22 +143,27 @@ func (p *Page) String() string {
 }
 
 func (p *Page) Compile() (*CompiledPage, error) {
-	config, err := os.ReadFile(p.ConfigPath)
-
-	if err != nil {
-		return nil, err
+	pageConfig := PageConfig{Title: "Home"}
+	if p.ConfigPath != "" {
+		config, err := os.ReadFile(p.ConfigPath)
+		if err != nil {
+			if !(p.IsSyntheticIndex() && os.IsNotExist(err)) {
+				return nil, err
+			}
+		} else {
+			if err := yaml.Unmarshal(config, &pageConfig); err != nil {
+				return nil, err
+			}
+		}
 	}
 
-	content, err := os.ReadFile(p.ContentPath)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var pageConfig PageConfig
-
-	if err := yaml.Unmarshal(config, &pageConfig); err != nil {
-		return nil, err
+	var content []byte
+	if p.ContentPath != "" {
+		contentFile, err := os.ReadFile(p.ContentPath)
+		if err != nil {
+			return nil, err
+		}
+		content = contentFile
 	}
 
 	renderedMarkdown := markdown.ToHTML(content, parser.New(), html.NewRenderer(html.RendererOptions{
@@ -202,8 +218,23 @@ func CollectPages(directory string) []*Page {
 	return pages
 }
 
+func EnsureIndexPage(pages []*Page, directory string) []*Page {
+	for _, page := range pages {
+		if page.Type == Index {
+			return pages
+		}
+	}
+
+	indexPage := &Page{
+		Type:       Index,
+		ConfigPath: filepath.Join(directory, ConfigFile),
+	}
+
+	return append([]*Page{indexPage}, pages...)
+}
+
 func main() {
-	pages := CollectPages(ParentDirectory)
+	pages := EnsureIndexPage(CollectPages(ParentDirectory), ParentDirectory)
 	compiledPages := make([]*CompiledPage, len(pages))
 
 	// we need to do a few rounds - first 'compile' the pages.

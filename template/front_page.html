@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>MCTeams Wiki - {{ .Title }}</title>
+		<link
+			href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+			rel="stylesheet"
+			integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+			crossorigin="anonymous"
+		/>
+
+		<style>
+			body {
+				margin: 2%;
+				background: linear-gradient(180deg, #f8f9fa 0%, #eef2f6 100%);
+			}
+
+			.home-shell {
+				min-height: calc(100vh - 4%);
+			}
+
+			.home-panel {
+				background: rgba(255, 255, 255, 0.94);
+				border: 1px solid rgba(33, 37, 41, 0.08);
+				border-radius: 24px;
+				box-shadow: 0 24px 80px rgba(33, 37, 41, 0.08);
+				padding: 3rem;
+			}
+
+			.brand-mark {
+				width: 72px;
+				height: 72px;
+				object-fit: contain;
+				margin-bottom: 1rem;
+			}
+
+			.brand-title {
+				font-size: clamp(2rem, 4vw, 3rem);
+				font-weight: 700;
+				letter-spacing: -0.03em;
+				margin-bottom: 0.5rem;
+			}
+
+			.brand-subtitle {
+				color: #6c757d;
+				margin-bottom: 0;
+			}
+
+			.home-intro {
+				max-width: 720px;
+				margin: 2rem auto 0;
+			}
+
+			.topics {
+				max-width: 720px;
+				margin: 2.5rem auto 0;
+			}
+
+			.topics-title {
+				font-size: 0.9rem;
+				font-weight: 700;
+				letter-spacing: 0.08em;
+				text-transform: uppercase;
+				color: #6c757d;
+				margin-bottom: 1rem;
+			}
+
+			.topic-list {
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+
+			.topic-item + .topic-item {
+				margin-top: 0.75rem;
+			}
+
+			.topic-link {
+				display: block;
+				padding: 1rem 1.25rem;
+				border-radius: 16px;
+				text-decoration: none;
+				color: #212529;
+				background: #f8f9fa;
+				border: 1px solid rgba(33, 37, 41, 0.08);
+				transition: transform 0.2s ease, box-shadow 0.2s ease,
+					background-color 0.2s ease;
+			}
+
+			.topic-link:hover {
+				transform: translateY(-2px);
+				background: #ffffff;
+				box-shadow: 0 14px 32px rgba(33, 37, 41, 0.08);
+			}
+
+			@media (max-width: 768px) {
+				.home-panel {
+					padding: 2rem 1.5rem;
+					border-radius: 20px;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container-fluid home-shell d-flex align-items-center justify-content-center">
+			<div class="row justify-content-center w-100">
+				<div class="col-xl-8 col-lg-9">
+					<main class="home-panel text-center">
+						<img
+							src="/assets/images/logo.png"
+							alt="Logo"
+							class="brand-mark"
+						/>
+						<h1 class="brand-title">MCTeams / Wiki</h1>
+						<p class="brand-subtitle">{{ .Title }}</p>
+
+						{{ if .Content }}
+						<div class="home-intro text-start">{{ .Content }}</div>
+						{{ end }}
+
+						<section class="topics text-start">
+							<p class="topics-title">Topics</p>
+							<ul class="topic-list">
+								{{ range $entry := .Entries }}
+								{{ if not $entry.Active }}
+								<li class="topic-item">
+									<a class="topic-link" href="{{ $entry.Link }}">{{$entry.Title}}</a>
+								</li>
+								{{ end }}
+								{{ end }}
+							</ul>
+						</section>
+					</main>
+				</div>
+			</div>
+		</div>
+		<script
+			src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+			integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+			crossorigin="anonymous"
+		></script>
+	</body>
+</html>
